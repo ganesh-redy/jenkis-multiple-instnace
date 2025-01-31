@@ -1,23 +1,33 @@
+
+
+
+
 pipeline {
   agent any
   environment {
-     GOOGLE_APPLICATION_CREDENTIALS = credentials('gcp-key')
+    GOOGLE_APPLICATION_CREDENTIALS = credentials('gcp-key')  // This fetches the stored GCP service account key.
   }
   stages {
-     stage ("connecting to git") {
-        steps{
-          git branch : "main", url : "https://github.com/ganesh-redy/Jenkin-gcp-instance.git"
-        }
+    stage("connecting to git") {
+      steps {
+        git branch: "main", url: "https://github.com/ganesh-redy/Jenkin-gcp-instance.git"
+      }
     }
 
-    stage ("terraform initlation"){
-        steps{
+    stage("terraform initialization") {
+      steps {
+        script {
+          // Save the GCP credentials JSON into a temporary file
+          withCredentials([file(credentialsId: 'gcp-key', variable: 'GCP_KEY_FILE')]) {
+            sh "echo $GCP_KEY_FILE > $GOOGLE_APPLICATION_CREDENTIALS"
+          }
+          
+          // Run Terraform commands
           sh "terraform init"
           sh "terraform plan"
-          sh "terraform apply -auto-approve"  
+          sh "terraform apply -auto-approve"
         }
+      }
     }
   }
-
 }
-
